@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { CreateTransactionPayload } from '@/lib/types';
 
+// Force dynamic rendering — never cache this route on Vercel edge
+export const dynamic = 'force-dynamic';
+
 // GET /api/transactions — list with optional filters
 export async function GET(request: NextRequest) {
   const supabase = await createClient();

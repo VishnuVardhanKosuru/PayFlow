@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import BottomNav from '@/components/layout/BottomNav';
 import MonthPicker from '@/components/ui/MonthPicker';
@@ -24,22 +24,26 @@ function formatINR(amount: number): string {
 }
 
 export default function DashboardPage() {
-  const [month, setMonth]                     = useState(getCurrentMonth);
-  const [summary, setSummary]                 = useState<MonthlySummary | null>(null);
-  const [breakdown, setBreakdown]             = useState<CategoryBreakdown[]>([]);
-  const [recentTxns, setRecentTxns]           = useState<Transaction[]>([]);
-  const [loading, setLoading]                 = useState(true);
-  const [displayName, setDisplayName]         = useState<string>('');
-
-  const supabase = createClient();
+  const [month, setMonth]             = useState(getCurrentMonth);
+  const [summary, setSummary]         = useState<MonthlySummary | null>(null);
+  const [breakdown, setBreakdown]     = useState<CategoryBreakdown[]>([]);
+  const [recentTxns, setRecentTxns]   = useState<Transaction[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [displayName, setDisplayName] = useState<string>('');
+  const monthRef = useRef(month);
+  monthRef.current = month;
 
   const loadData = useCallback(async () => {
+    // Move supabase inside so it's always a fresh client (avoids stale closure)
+    const supabase = createClient();
     setLoading(true);
     try {
+      // cache: 'no-store' — critical: tells Next.js/Vercel NEVER to cache these
+      // responses. Without this, Vercel serves stale data even after new transactions.
       const [summaryRes, insightsRes, txnsRes, profileRes] = await Promise.all([
-        fetch(`/api/summary?month=${month}`),
-        fetch(`/api/insights?month=${month}`),
-        fetch(`/api/transactions?month=${month}&limit=5`),
+        fetch(`/api/summary?month=${monthRef.current}`, { cache: 'no-store' }),
+        fetch(`/api/insights?month=${monthRef.current}`, { cache: 'no-store' }),
+        fetch(`/api/transactions?month=${monthRef.current}&limit=5`, { cache: 'no-store' }),
         supabase.from('profiles').select('display_name').single(),
       ]);
 
@@ -61,9 +65,19 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [month]);
+  }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  // Reload when month changes
+  useEffect(() => { loadData(); }, [month, loadData]);
+
+  // Auto-refresh when user comes back to this tab/page (e.g. after adding an expense)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadData();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadData]);
 
   return (
     <div className="app-container">
@@ -73,12 +87,19 @@ export default function DashboardPage() {
           <span className="header-logo">PayFlow</span>
         </div>
         <MonthPicker value={month} onChange={setMonth} />
-        <div style={{ width: 70, textAlign: 'right' }}>
+        <div style={{ width: 70, textAlign: 'right', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
           {displayName && (
             <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>
               Hi, {displayName.split(' ')[0]} 👋
             </span>
           )}
+          {/* Manual refresh button — tap to force live data */}
+          <button
+            onClick={loadData}
+            disabled={loading}
+            title="Refresh"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, opacity: loading ? 0.4 : 1, padding: 0, lineHeight: 1 }}
+          >🔄</button>
         </div>
       </header>
 

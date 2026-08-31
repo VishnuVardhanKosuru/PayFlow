@@ -50,7 +50,8 @@ export default function InsightsPage() {
   const loadInsights = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/insights?month=${month}`);
+      // cache: 'no-store' — prevents Vercel from serving stale cached insights
+      const res = await fetch(`/api/insights?month=${month}`, { cache: 'no-store' });
       if (res.ok) {
         const { data } = await res.json();
         setInsights(data);
@@ -61,6 +62,16 @@ export default function InsightsPage() {
   }, [month]);
 
   useEffect(() => { loadInsights(); }, [loadInsights]);
+
+  // Auto-refresh when tab becomes visible (e.g. after adding an expense)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadInsights();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadInsights]);
+
 
   const summary    = insights?.summary;
   const breakdown  = insights?.category_breakdown || [];

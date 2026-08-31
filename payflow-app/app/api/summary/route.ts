@@ -1,6 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering — never cache this route on Vercel edge
+export const dynamic = 'force-dynamic';
+
 // GET /api/summary?month=YYYY-MM
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
