@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+// Inner component — uses useSearchParams so MUST be inside <Suspense>
+function LoginForm() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode]         = useState<'login' | 'signup'>('login');
@@ -132,5 +133,25 @@ export default function LoginPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+// Outer page — wraps LoginForm in Suspense so Next.js can prerender the shell.
+// useSearchParams() inside LoginForm requires this boundary to exist.
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="login-page">
+        <div className="login-card">
+          <div className="login-logo">PayFlow</div>
+          <p className="login-tagline">Know where every rupee goes.</p>
+          <div className="loading-container">
+            <div className="loading-spinner" />
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
