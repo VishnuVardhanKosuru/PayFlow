@@ -1,6 +1,7 @@
 'use client';
 
 import { Transaction } from '@/lib/types';
+import { TrendingUp, CreditCard, ChevronRight } from 'lucide-react';
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -33,20 +34,20 @@ function formatAmount(amount: number): string {
 }
 
 export default function TransactionItem({ transaction, onClick }: TransactionItemProps) {
-  const isIncome = transaction.type === 'income';
-  const category = transaction.category;
-
-  const iconBg = category?.color
-    ? `${category.color}22`
-    : isIncome
-    ? 'rgba(34, 211, 165, 0.15)'
-    : 'rgba(255,255,255,0.06)';
+  const isIncome  = transaction.type === 'income';
+  const category  = transaction.category;
 
   return (
     <div className="transaction-item" onClick={onClick} role={onClick ? 'button' : undefined}>
       {/* Icon */}
-      <div className="transaction-item-icon" style={{ background: iconBg }}>
-        {category?.icon || (isIncome ? '💰' : '💳')}
+      <div
+        className="transaction-item-icon"
+        style={{ background: category?.color ? `${category.color}18` : undefined }}
+      >
+        {isIncome
+          ? <TrendingUp size={16} strokeWidth={2} color="var(--green)" />
+          : <CreditCard size={16} strokeWidth={1.8} color="var(--ink-3)" />
+        }
       </div>
 
       {/* Info */}
@@ -57,13 +58,16 @@ export default function TransactionItem({ transaction, onClick }: TransactionIte
         <div className="transaction-item-subtitle">
           {category?.name && transaction.description ? `${category.name} · ` : ''}
           {formatDate(transaction.occurred_at)} · {formatTime(transaction.occurred_at)}
-          {transaction.trip?.name ? ` · 🗺️ ${transaction.trip.name}` : ''}
+          {transaction.trip?.name ? ` · ${transaction.trip.name}` : ''}
         </div>
       </div>
 
       {/* Amount */}
-      <div className={`transaction-item-amount ${transaction.type}`}>
-        {isIncome ? '+' : '-'}{formatAmount(transaction.amount)}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span className={`transaction-item-amount ${transaction.type}`}>
+          {isIncome ? '+' : '-'}{formatAmount(transaction.amount)}
+        </span>
+        {onClick && <ChevronRight size={14} color="var(--ink-4)" />}
       </div>
     </div>
   );

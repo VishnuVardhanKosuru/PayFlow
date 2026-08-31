@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ChevronLeft } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -9,25 +10,23 @@ interface HeaderProps {
 }
 
 export default function Header({ title, showBack = false, action }: HeaderProps) {
+  const router = useRouter();
+
   return (
     <header className="app-header">
       <div className="flex items-center gap-sm">
         {showBack && (
-          <Link
-            href="javascript:history.back()"
+          <button
+            onClick={() => router.back()}
             className="btn-icon btn-ghost"
-            style={{ fontSize: 20, color: 'var(--text-secondary)' }}
             aria-label="Go back"
+            style={{ color: 'var(--ink-2)' }}
           >
-            ‹
-          </Link>
+            <ChevronLeft size={20} strokeWidth={2} />
+          </button>
         )}
-        {!showBack && (
-          <span className="header-logo">PayFlow</span>
-        )}
-        {showBack && (
-          <h1 className="header-title">{title}</h1>
-        )}
+        {!showBack && <span className="header-logo">PayFlow</span>}
+        {showBack && <h1 className="header-title">{title}</h1>}
       </div>
 
       {!showBack && (

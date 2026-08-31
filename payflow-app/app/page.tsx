@@ -8,6 +8,7 @@ import DonutChart from '@/components/charts/DonutChart';
 import TransactionItem from '@/components/transactions/TransactionItem';
 import { MonthlySummary, CategoryBreakdown, Transaction } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
+import { TrendingUp, TrendingDown, Plus, BarChart2, RotateCw, Receipt } from 'lucide-react';
 
 function getCurrentMonth(): string {
   const now = new Date();
@@ -93,13 +94,15 @@ export default function DashboardPage() {
               Hi, {displayName.split(' ')[0]} 👋
             </span>
           )}
-          {/* Manual refresh button — tap to force live data */}
+          {/* Manual refresh button */}
           <button
             onClick={loadData}
             disabled={loading}
             title="Refresh"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, opacity: loading ? 0.4 : 1, padding: 0, lineHeight: 1 }}
-          >🔄</button>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-4)', opacity: loading ? 0.4 : 1, padding: 4, display: 'flex', alignItems: 'center' }}
+          >
+            <RotateCw size={15} strokeWidth={2} style={{ animation: loading ? 'spin 0.7s linear infinite' : 'none' }} />
+          </button>
         </div>
       </header>
 
@@ -127,17 +130,21 @@ export default function DashboardPage() {
             {/* Summary Cards */}
             <div className="summary-grid">
               <div className="summary-card">
-                <div className="summary-card-icon">💰</div>
+                <div className="summary-card-icon">
+                  <TrendingUp size={16} strokeWidth={2} color="var(--green)" />
+                </div>
                 <div className="summary-card-label">Income</div>
-                <div className="summary-card-value" style={{ color: 'var(--color-success)' }}>
+                <div className="summary-card-value" style={{ color: 'var(--green)' }}>
                   {summary ? formatINR(summary.total_income) : '₹0'}
                 </div>
               </div>
 
               <div className="summary-card">
-                <div className="summary-card-icon">💸</div>
+                <div className="summary-card-icon">
+                  <TrendingDown size={16} strokeWidth={2} color="var(--red)" />
+                </div>
                 <div className="summary-card-label">Spent</div>
-                <div className="summary-card-value" style={{ color: 'var(--color-danger)' }}>
+                <div className="summary-card-value" style={{ color: 'var(--red)' }}>
                   {summary ? formatINR(summary.total_expenses) : '₹0'}
                 </div>
               </div>
@@ -182,16 +189,22 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--space-sm)' }}>
               <Link href="/add" className="glass-card-interactive" style={{ textAlign: 'center', padding: '16px 8px', textDecoration: 'none' }}>
-                <div style={{ fontSize: 24, marginBottom: 6 }}>➕</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Add Expense</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+                  <Plus size={22} strokeWidth={2} color="var(--ink-2)" />
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)' }}>Add Expense</div>
               </Link>
               <Link href="/income" className="glass-card-interactive" style={{ textAlign: 'center', padding: '16px 8px', textDecoration: 'none' }}>
-                <div style={{ fontSize: 24, marginBottom: 6 }}>💰</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Add Income</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+                  <TrendingUp size={22} strokeWidth={2} color="var(--ink-2)" />
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)' }}>Add Income</div>
               </Link>
               <Link href="/insights" className="glass-card-interactive" style={{ textAlign: 'center', padding: '16px 8px', textDecoration: 'none' }}>
-                <div style={{ fontSize: 24, marginBottom: 6 }}>📊</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' }}>Insights</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+                  <BarChart2 size={22} strokeWidth={2} color="var(--ink-2)" />
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-3)' }}>Insights</div>
               </Link>
             </div>
 
@@ -214,7 +227,9 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="empty-state">
-                <div className="empty-state-icon">🧾</div>
+                <div className="empty-state-icon">
+                  <Receipt size={24} strokeWidth={1.5} />
+                </div>
                 <div className="empty-state-title">No transactions yet</div>
                 <div className="empty-state-desc">Tap the + button to record your first expense.</div>
               </div>
