@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   const prevStart = `${prevMonth}-01T00:00:00+05:30`;
   const prevEnd   = `${prevMonth}-${String(prevLastDay).padStart(2,'0')}T23:59:59+05:30`;
 
-  const [currentTxns, prevTxns, incomeRes] = await Promise.all([
+  const [currentTxns, prevTxns, incomeFromTableRes, incomeFromTxnsRes] = await Promise.all([
     supabase
       .from('transactions')
       .select('amount, category_id, category:categories(id,name,icon,color)')
@@ -42,19 +42,31 @@ export async function GET(request: NextRequest) {
       .eq('type', 'expense')
       .gte('occurred_at', prevStart)
       .lte('occurred_at', prevEnd),
+    // Income from monthly_income table (added via /income page)
     supabase
       .from('monthly_income')
       .select('amount')
       .eq('user_id', user.id)
       .eq('month', month),
+    // Income from transactions table (added via /add page with type=income)
+    supabase
+      .from('transactions')
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('type', 'income')
+      .gte('occurred_at', startDate)
+      .lte('occurred_at', endDate),
   ]);
 
-  const currentData = currentTxns.data || [];
-  const prevData    = prevTxns.data    || [];
-  const totalIncome = (incomeRes.data  || []).reduce((s, i) => s + (i.amount || 0), 0);
-  const totalExpenses = currentData.reduce((s, t) => s + (t.amount || 0), 0);
-  const remaining   = totalIncome - totalExpenses;
-  const savingsRate = totalIncome > 0 ? (remaining / totalIncome) * 100 : 0;
+  const currentData     = currentTxns.data || [];
+  const prevData        = prevTxns.data    || [];
+  const incomeFromTable = (incomeFromTableRes.data || []).reduce((s, i) => s + (i.amount || 0), 0);
+  const incomeFromTxns  = (incomeFromTxnsRes.data  || []).reduce((s, t) => s + (t.amount || 0), 0);
+  // Combine both income sources so /add (💰 Income) and /income page both count
+  const totalIncome     = incomeFromTable + incomeFromTxns;
+  const totalExpenses   = currentData.reduce((s, t) => s + (t.amount || 0), 0);
+  const remaining       = totalIncome - totalExpenses;
+  const savingsRate     = totalIncome > 0 ? (remaining / totalIncome) * 100 : 0;
 
   // Category breakdown — current month
   const catMap: Record<string, { name: string; icon: string; color: string; total: number; count: number }> = {};
