@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('');
@@ -12,8 +12,15 @@ export default function LoginPage() {
   const [message, setMessage]   = useState('');
   const [error, setError]       = useState('');
 
-  const supabase = createClient();
-  const router   = useRouter();
+  const supabase     = createClient();
+  const router       = useRouter();
+  const searchParams = useSearchParams();
+
+  // Show errors passed via URL (e.g. expired confirmation link)
+  useEffect(() => {
+    const urlError = searchParams.get('error');
+    if (urlError) setError(decodeURIComponent(urlError));
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +30,15 @@ export default function LoginPage() {
 
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            // After clicking the confirmation email, Supabase sends the user here.
+            // This route exchanges the one-time code for a real session.
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          },
+        });
         if (error) throw error;
         setMessage('Account created! Check your email to confirm, then log in.');
       } else {
