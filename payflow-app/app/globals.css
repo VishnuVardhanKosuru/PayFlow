@@ -163,8 +163,7 @@ img, svg { display: block; max-width: 100%; }
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  padding: 0 var(--space-xs);
+  justify-content: space-evenly;  /* equal space before/between/after every item */
   padding-bottom: env(safe-area-inset-bottom, 0);
   z-index: 100;
 }
@@ -173,12 +172,13 @@ img, svg { display: block; max-width: 100%; }
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
-  padding: 8px 12px;
+  padding: 8px 0;
   border-radius: var(--r-md);
   color: var(--ink-4);
   -webkit-tap-highlight-color: transparent;
-  min-width: 52px;
+  flex: 1;                /* each item takes exactly 1/5 of the bar width */
   transition: color var(--transition-fast);
 }
 
@@ -212,7 +212,7 @@ img, svg { display: block; max-width: 100%; }
   color: white;
   transition: opacity var(--transition-fast), transform var(--transition-fast);
   -webkit-tap-highlight-color: transparent;
-  margin-top: -4px;
+  flex-shrink: 0;
 }
 
 .nav-add-btn:hover  { opacity: 0.85; }
