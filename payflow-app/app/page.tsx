@@ -154,7 +154,7 @@ export default function DashboardPage() {
                   <DonutChart
                     data={breakdown}
                     size={110}
-                    centerValue={summary ? `${summary.savings_rate.toFixed(0)}%` : '—'}
+                    centerValue={summary ? `${Math.floor(summary.savings_rate)}%` : '—'}
                     centerLabel="saved"
                   />
                   <div style={{ flex: 1 }}>

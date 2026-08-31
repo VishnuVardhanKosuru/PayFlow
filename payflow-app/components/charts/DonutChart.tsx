@@ -35,8 +35,21 @@ export default function DonutChart({
             fill="none" stroke="var(--bg-muted)" strokeWidth={strokeWidth}
           />
         </svg>
-        <div className="donut-center">
-          <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>No data</span>
+        <div className="donut-center" style={{ gap: 2 }}>
+          {centerValue ? (
+            <>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', letterSpacing: '-0.5px' }}>
+                {centerValue}
+              </span>
+              {centerLabel && (
+                <span style={{ fontSize: 10, color: 'var(--ink-4)', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {centerLabel}
+                </span>
+              )}
+            </>
+          ) : (
+            <span style={{ fontSize: 11, color: 'var(--ink-4)' }}>No data</span>
+          )}
         </div>
       </div>
     );

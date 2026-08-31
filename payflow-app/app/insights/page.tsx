@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header';
 import DonutChart from '@/components/charts/DonutChart';
 import MonthPicker from '@/components/ui/MonthPicker';
 import { InsightsData } from '@/lib/types';
+import { BarChart2, AlertCircle, AlertTriangle, Info, ArrowUp, ArrowDown, ArrowRight } from 'lucide-react';
 
 function getCurrentMonth(): string {
   const now = new Date();
@@ -35,8 +36,8 @@ function SavingsRing({ rate }: { rate: number }) {
         />
       </svg>
       <div style={{ position: 'absolute', textAlign: 'center' }}>
-        <div style={{ fontSize: 18, fontWeight: 900, color, letterSpacing: '-0.5px' }}>{rate.toFixed(0)}%</div>
-        <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>SAVED</div>
+        <div style={{ fontSize: 18, fontWeight: 900, color, letterSpacing: '-0.5px' }}>{Math.floor(rate)}%</div>
+        <div style={{ fontSize: 10, color: 'var(--ink-4)', fontWeight: 600 }}>SAVED</div>
       </div>
     </div>
   );
@@ -94,7 +95,9 @@ export default function InsightsPage() {
           </div>
         ) : !summary || summary.transaction_count === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📊</div>
+            <div className="empty-state-icon">
+              <BarChart2 size={24} strokeWidth={1.5} />
+            </div>
             <div className="empty-state-title">No data for this month</div>
             <div className="empty-state-desc">Add some expenses to see your spending insights.</div>
           </div>
@@ -103,7 +106,11 @@ export default function InsightsPage() {
             {/* Alerts */}
             {alerts.map((a, i) => (
               <div key={i} className={`alert-banner ${a.severity}`}>
-                <span>{a.severity === 'danger' ? '🚨' : a.severity === 'warning' ? '⚠️' : 'ℹ️'}</span>
+                <span>
+                  {a.severity === 'danger' ? <AlertCircle size={16} /> : 
+                   a.severity === 'warning' ? <AlertTriangle size={16} /> : 
+                   <Info size={16} />}
+                </span>
                 <span>{a.message}</span>
               </div>
             ))}
@@ -198,7 +205,7 @@ export default function InsightsPage() {
                       </div>
                     </div>
                     <div className={`mom-change-badge ${item.change_direction}`}>
-                      {item.change_direction === 'new' ? '🆕 New' :
+                      {item.change_direction === 'new' ? 'New' :
                        item.change_direction === 'up' ? `↑ ${item.change_percentage?.toFixed(0)}%` :
                        item.change_direction === 'down' ? `↓ ${Math.abs(item.change_percentage || 0).toFixed(0)}%` :
                        '→ Same'}
