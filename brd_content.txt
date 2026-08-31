@@ -1,0 +1,132 @@
+Business Requirements Document (BRD)
+PayFlow — Mobile-First Salary & Expense Intelligence
+Document Version
+1.0
+Date
+31 Aug 2026
+Product
+PayFlow
+Status
+Draft / MVP
+1. Executive Summary
+PayFlow is a personal finance application designed around one simple problem: a user can spend money throughout the day but rarely has a frictionless way to record every expense. The product turns the iPhone into a lightweight expense-capture device and a mobile dashboard for understanding salary, spending, savings, categories, trips, and monthly trends.
+The product is intentionally designed as a capture-first experience: the user should be able to record an expense using an iPhone Back Tap/Shortcut, voice input, a quick mobile action, or a lightweight message workflow, without opening a full finance application for every transaction.
+2. Business Problem
+Manual expense tracking is repetitive and often forgotten, especially for small daily purchases.
+Traditional expense applications require multiple taps and context switching for a transaction that may take only a few seconds to record.
+Users care less about maintaining a list of transactions and more about answering: “Where did my salary go?”
+Fixed, generic categories do not reflect personal spending patterns such as Bangalore Trip, Mom Needs, Home Needs, or Protein.
+Insights are often separated from capture, making it difficult to build a daily habit of recording expenses and reviewing trends.
+3. Product Vision
+Build a personal money companion that makes expense capture nearly invisible and turns raw transactions into understandable salary and spending insights.
+Core positioning: “Know where every rupee goes without having to write it down.”
+4. Objectives
+Reduce expense-recording effort to approximately 2–3 seconds for common transactions.
+Provide a single view of monthly income, total spend, savings/remaining balance, and top spending categories.
+Support user-defined categories and contextual groups such as trips or family-related spending.
+Make financial insights available at a glance through an iPhone Home Screen widget.
+Start with a no-paid-AI-key architecture; add intelligence only where it creates clear user value.
+Use a low-cost, simple backend architecture suitable for a personal MVP.
+5. Target User
+Attribute
+Requirement
+Primary user
+Individual iPhone user who wants to track salary and daily expenses.
+Device
+iPhone; initial experience optimized for iPhone 12 and later.
+Usage pattern
+Frequent small expense entries, monthly salary tracking, periodic review.
+Finance model
+Salary/income + day-to-day spending + savings/remaining money.
+Category model
+Personalized categories and optional trips/projects.
+Privacy expectation
+Personal financial data should remain private and protected.
+6. Key User Journeys
+Quick expense: user performs an iPhone Back Tap → Shortcut collects amount and category → transaction is saved → dashboard/widget can refresh.
+Voice expense: user performs a Back Tap → dictates “₹450 protein” → Shortcut captures text → server/parser converts it into a transaction → transaction is saved.
+Dashboard review: user opens the mobile web app → sees salary, spent, remaining, category split, and recent transactions.
+Trip tracking: user selects or creates a trip such as Bangalore Trip → related expenses are assigned to the trip → app shows trip total and breakdown.
+Monthly review: user sees month-over-month changes and top spending areas, including categories that increased materially.
+7. Functional Scope — MVP
+Area
+MVP Capability
+Priority
+Income
+Record monthly salary/income and income date.
+Must
+Expense capture
+Quick entry by amount/category through mobile UI and Shortcuts.
+Must
+Voice capture
+Convert dictated text into a transaction using non-LLM parsing/rules initially.
+Must
+Categories
+Create, edit, archive and assign custom categories.
+Must
+Transactions
+View, edit, delete and search transactions.
+Must
+Dashboard
+Salary, spend, remaining, category breakdown and recent transactions.
+Must
+Insights
+Top categories, month-over-month change, savings rate, simple spending alerts.
+Should
+Trips / groups
+Group expenses under user-defined trip or event names.
+Should
+iPhone widget
+Show current-month spend and at least one insight; deep link to dashboard.
+Should
+AI
+Optional future enhancement for natural-language parsing and richer explanations.
+Could
+8. Non-Functional Business Requirements
+The common expense-capture path should feel instant and require minimal interaction.
+Mobile UI must be optimized for one-handed use on a small screen.
+Financial information must be treated as private personal data; secure authentication and database access controls are required.
+The system should be simple enough to operate at personal scale with minimal infrastructure cost.
+The product should not depend on an external paid AI service for core expense recording.
+9. Out of Scope — MVP
+Direct bank-account aggregation or automatic bank-feed reconciliation.
+Credit-score management, lending, investments, taxation, or insurance modules.
+Multi-user family accounting with complex permissions.
+Fully autonomous financial decisions or payment execution.
+LLM-powered recommendations as a hard dependency.
+10. Success Metrics
+Metric
+MVP Target
+Expense capture completion
+>90% for initiated quick-entry flows.
+Time to record common expense
+≤10 seconds; target 2–3 seconds after personalization.
+Weekly logging consistency
+User records expenses on most spending days.
+Dashboard usefulness
+User can identify top 3 spending categories within 5 seconds.
+Data accuracy
+No duplicate transaction created by the same capture event.
+11. Business Rules
+Every transaction must have a type: Income or Expense.
+Every expense must have an amount, date/time, and category; description is recommended.
+Categories are user-controlled and can be customized for personal needs.
+Trip/event grouping is optional and independent of the primary category.
+Monthly spend = sum of expense transactions for the selected calendar month.
+Remaining = monthly income minus expenses recorded for that month, unless the user selects a different calculation mode.
+Insights must be derived from stored transaction data and should not require an AI model.
+12. Product Dependencies
+Supabase for PostgreSQL database, authentication and server-side functions/APIs.
+iOS Shortcuts for Back Tap and quick capture workflows.
+A small native iOS companion layer for a true Home Screen widget using WidgetKit.
+Mobile web application/PWA for the primary dashboard and transaction management experience.
+13. Future Enhancements
+LLM-based natural-language transaction parsing.
+Merchant recognition and automatic category prediction.
+Receipt/photo capture.
+Recurring salary and recurring expense detection.
+Smart monthly narrative: “Your salary was ₹X; you spent Y%; the biggest increase was Z.”
+Bank/payment-feed integration where available and appropriate.
+Optional family summary or shareable monthly report.
+14. Acceptance Summary
+The MVP is successful when a user can record income and expenses with minimal friction from the iPhone, review all activity in a mobile-first dashboard, understand where the monthly salary is being spent, and see a useful financial summary from the Home Screen widget.

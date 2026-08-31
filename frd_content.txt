@@ -1,0 +1,292 @@
+Functional Requirements Document (FRD)
+PayFlow — Technical & Functional Specification for MVP
+Document Version
+1.0
+Date
+31 Aug 2026
+Product
+PayFlow
+Status
+Draft / MVP
+1. System Overview
+PayFlow consists of three user-facing layers and one backend layer: (1) iPhone capture through Shortcuts/Back Tap, (2) a mobile-first web application/PWA, (3) an iOS companion/widget layer for the Home Screen, and (4) Supabase for database, authentication and server-side API logic.
+Core principle: the Shortcut captures minimal input; the backend remains the source of truth for transactions and computed financial metrics.
+2. High-Level Architecture
+Component
+Responsibility
+Initial Technology
+iPhone Shortcuts
+Capture amount/text/category; call backend endpoint.
+Apple Shortcuts
+Back Tap
+Launch quick expense or voice capture shortcut.
+iOS Back Tap
+Mobile Web App
+Dashboard, transactions, categories, salary and insights.
+React/Next.js or similar PWA
+Native iOS Companion
+Expose WidgetKit widget and deep link to web experience.
+Swift + WidgetKit
+Backend/API
+Validation, authorization, transaction processing and analytics.
+Supabase Edge Functions / API
+Database
+Persistent storage for users, transactions, categories, trips and settings.
+Supabase PostgreSQL
+Authentication
+Secure sign-in/session management.
+Supabase Auth
+3. Core Data Model
+Table
+Key Fields
+Purpose
+profiles
+id, display_name, currency, timezone
+User preferences and profile.
+monthly_income
+id, user_id, month, amount, source, created_at
+Monthly salary/income records.
+categories
+id, user_id, name, type, icon, color, is_active
+User-defined income/expense categories.
+trips
+id, user_id, name, start_date, end_date, notes
+Optional trip/event grouping.
+transactions
+id, user_id, type, amount, description, category_id, trip_id, merchant, occurred_at, source, created_at, updated_at
+Primary financial ledger.
+insight_snapshots
+id, user_id, period, metric_key, metric_value, generated_at
+Optional cached analytics for widgets and fast reads.
+user_settings
+user_id, default_category, monthly_budget, widget_preference
+User-specific application settings.
+4. Transaction Functional Requirements
+ID
+Function
+Requirement
+FR-001
+Create expense
+System shall create an expense transaction from the mobile UI or Shortcut API with amount, date/time and category.
+FR-002
+Create income
+System shall allow salary/income to be recorded for a selected month.
+FR-003
+Edit transaction
+User shall be able to modify amount, description, category, trip and date/time.
+FR-004
+Delete transaction
+User shall be able to delete a transaction after a confirmation step.
+FR-005
+Category assignment
+System shall preserve the selected category and allow reassignment.
+FR-006
+Trip assignment
+User may associate an expense with a trip/event without changing its primary category.
+FR-007
+Duplicate protection
+API shall support an idempotency key or equivalent mechanism for Shortcut-generated requests.
+FR-008
+Source tracking
+System shall store source values such as WEB, SHORTCUT, VOICE, WIDGET or IMPORT.
+5. Shortcut / Back Tap Requirements
+ID
+Workflow
+Expected Behaviour
+SC-001
+Double Back Tap
+Launch Quick Expense shortcut.
+SC-002
+Triple Back Tap
+Launch Voice Expense shortcut.
+SC-003
+Quick Expense
+Collect amount and category; optionally request note/trip; submit transaction.
+SC-004
+Voice Expense
+Capture dictated text; send text for deterministic parsing; ask for confirmation when confidence is low.
+SC-005
+Success response
+Shortcut displays a brief confirmation such as “₹450 saved to Protein”.
+SC-006
+Offline failure
+If API is unreachable, Shortcut should present an error and avoid reporting a successful save.
+6. Natural-Language Parsing Without AI
+The MVP can parse common patterns using deterministic rules before any LLM is introduced. Example input: “₹450 protein” → amount 450, description protein, category Protein. Example input: “250 uber blr trip” → amount 250, description uber blr trip, category Travel, trip Bangalore Trip if a matching active trip exists.
+Normalize currency symbols and numeric formats such as 450, ₹450, 0.45k and 1.2k where safely supported.
+Use user category names and synonyms to map text to categories.
+Use merchant keyword mappings for common merchants.
+Use active trip names to infer trip association.
+When amount cannot be confidently parsed, return a validation error instead of creating a transaction.
+7. Optional AI Integration Boundary
+AI is an optional enhancement and must not be a hard dependency for core ledger functions. If an LLM is added later, the recommended architecture is to pass only the minimum required text and context to a server-side function. API keys must never be embedded in the mobile web app or iOS Shortcut.
+Use Case
+MVP
+Future AI Option
+Voice-to-text
+iPhone dictation
+No change required
+Amount/category extraction
+Rules/regex/user mappings
+LLM fallback for complex phrases
+Spending insights
+SQL calculations
+LLM-generated explanations
+Category suggestions
+Keyword rules
+LLM-assisted prediction
+8. Mobile Web Application Requirements
+Screen
+Required Functions
+Home
+Show selected month salary, total expenses, remaining amount, savings rate, top categories and recent transactions.
+Transactions
+List, search, filter, edit and delete transactions.
+Add Expense
+Manual expense entry with amount, category, note, trip and date.
+Income
+Add/edit salary and other income.
+Categories
+Create/edit/archive categories and optionally icons/colors.
+Trips
+Create trips/events and view their expense totals.
+Insights
+Category trends, month-over-month comparisons and simple spending alerts.
+Settings
+Currency, timezone, defaults, authentication and widget preferences.
+9. Widget Requirements
+ID
+Requirement
+Details
+WD-001
+Small widget
+Show remaining monthly balance and current spend.
+WD-002
+Medium widget
+Show salary, spend, remaining balance and top category.
+WD-003
+Insight
+Show one concise insight such as category increase or largest spend.
+WD-004
+Refresh
+Refresh after a successful transaction where practical and on scheduled widget refresh opportunities.
+WD-005
+Deep link
+Tapping the widget shall open the relevant page in the mobile web app or companion app.
+WD-006
+Privacy
+Widget must not expose sensitive transaction descriptions that the user would not want visible at a glance.
+Implementation note: a true iPhone Home Screen widget requires an iOS native companion target using WidgetKit; the main finance experience can remain a mobile web application/PWA.
+10. API Requirements
+Method
+Endpoint
+Purpose
+POST
+/transactions
+Create a transaction.
+GET
+/transactions
+List transactions with filters.
+PATCH
+/transactions/{id}
+Update a transaction.
+DELETE
+/transactions/{id}
+Delete a transaction.
+POST
+/income
+Create/update monthly income.
+GET
+/summary?month=YYYY-MM
+Return salary, spend, remaining and savings rate.
+GET
+/insights?month=YYYY-MM
+Return computed insights.
+GET
+/categories
+Return active user categories.
+POST
+/categories
+Create a category.
+GET
+/trips
+Return trips/events.
+POST
+/trips
+Create a trip/event.
+The logical contract above may be implemented directly through Supabase REST/RPC or via Supabase Edge Functions. For Shortcut calls, a small authenticated function endpoint is recommended so validation and idempotency logic stays server-side.
+11. Sample Create Transaction Payload
+{  "type": "expense",  "amount": 450.00,  "description": "Protein",  "category_id": "<category-id>",  "trip_id": null,  "merchant": null,  "occurred_at": "2026-08-31T10:30:00+05:30",  "source": "SHORTCUT",  "idempotency_key": "<unique-key>"}
+12. Business Logic / Calculations
+Metric
+Calculation
+Monthly Expense
+SUM(transactions.amount) WHERE type=expense AND occurred_at in selected month
+Monthly Income
+SUM(monthly_income.amount) for selected month
+Remaining
+Monthly Income - Monthly Expense
+Savings Rate
+Remaining / Monthly Income × 100, when income > 0
+Category Share
+Category Expense / Monthly Expense × 100
+Month-over-Month Change
+(Current category spend - Previous category spend) / Previous category spend × 100, where prior spend > 0
+13. Authentication & Security
+Every database row containing financial data must be associated with a user_id.
+Supabase Row Level Security (RLS) should restrict reads/writes to the authenticated user owner.
+Service-role credentials must remain server-side and never be placed in the PWA, Shortcut or widget.
+If an external AI provider is added, its API key must only be stored in server-side secrets.
+Use HTTPS for all API access.
+Do not log sensitive transaction payloads unnecessarily in production.
+14. Error Handling
+Scenario
+System Response
+Missing amount
+Reject request with validation message; do not create transaction.
+Invalid category
+Use a controlled default only if configured; otherwise reject or ask user to select.
+Unauthorized request
+Return authentication/authorization error; do not expose transaction data.
+Duplicate Shortcut request
+Return the original transaction or safe duplicate response based on idempotency key.
+Network unavailable
+Shortcut shows failure; no false success message.
+Widget data unavailable
+Show cached/last-known safe summary rather than exposing partial calculations.
+15. Performance Requirements
+Normal transaction creation should complete within a few seconds over a healthy mobile connection.
+Dashboard summary should be returned quickly enough for normal mobile use; aggregated queries should be indexed by user_id and date.
+Use database indexes on user_id, occurred_at, type, category_id and trip_id as appropriate.
+Widget payload should be small and optimized for glanceable rendering.
+16. Testing Requirements
+Test Area
+Examples
+Shortcut
+Amount entry, voice entry, API errors, retry behavior, idempotency.
+Transactions
+Create/edit/delete/filter and month boundaries.
+Calculations
+Salary, spend, remaining, savings rate and category totals.
+Security
+RLS prevents access to another user’s transactions.
+Widget
+Small/medium layouts, refresh, empty state, deep link.
+Responsive UI
+iPhone 12 viewport, portrait-first interaction, touch target sizes.
+17. MVP Delivery Phases
+Phase 1 — Supabase schema, authentication, transactions, categories and salary tracking.
+Phase 2 — Mobile PWA dashboard and transaction management.
+Phase 3 — iPhone Shortcuts + Back Tap quick capture and voice capture.
+Phase 4 — Analytics/insights and optimized widget data endpoint.
+Phase 5 — Native WidgetKit companion and deep linking.
+Phase 6 — Optional AI enhancement after deterministic parsing proves insufficient.
+18. Definition of Done
+A user can sign in and see only their own data.
+A monthly salary can be recorded and displayed on the dashboard.
+An expense can be captured from the mobile web UI and an iPhone Shortcut.
+Voice capture can create common expenses without a paid AI service.
+Categories and optional trips can be created and attached to expenses.
+Monthly totals and insights reconcile with the underlying transactions.
+The Home Screen widget displays current financial status and deep-links into the product.
+Core operations continue to function without an external LLM API.
