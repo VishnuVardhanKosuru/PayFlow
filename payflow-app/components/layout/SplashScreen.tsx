@@ -47,11 +47,9 @@ export default function SplashScreen() {
           : 'none',
       }}
     >
-      {/* Logo mark — two stacked lines as abstract "flow" mark */}
-      <div style={{ marginBottom: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-        <div style={{ width: 36, height: 4, background: '#ffffff', borderRadius: 2 }} />
-        <div style={{ width: 24, height: 4, background: 'rgba(255,255,255,0.4)', borderRadius: 2 }} />
-        <div style={{ width: 30, height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 2 }} />
+      {/* Logo mark */}
+      <div style={{ marginBottom: 22, width: 64, height: 64, borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' }}>
+        <img src="/apple-touch-icon.png" alt="PayFlow" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </div>
 
       {/* Wordmark */}

@@ -84,7 +84,8 @@ export default function DashboardPage() {
     <div className="app-container">
       {/* Header */}
       <header className="app-header">
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img src="/apple-touch-icon.png" alt="PayFlow" style={{ width: 22, height: 22, borderRadius: 6, objectFit: 'cover' }} />
           <span className="header-logo">PayFlow</span>
         </div>
         <MonthPicker value={month} onChange={setMonth} />
