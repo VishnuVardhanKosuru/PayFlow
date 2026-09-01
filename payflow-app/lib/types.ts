@@ -168,6 +168,7 @@ export interface CreateIncomePayload {
 
 export interface VoiceParseResult {
   success: boolean;
+  type?: TransactionType;
   amount?: number;
   description?: string;
   category_name?: string;
