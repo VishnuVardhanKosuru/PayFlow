@@ -114,16 +114,26 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
-            {/* Hero — Remaining Balance */}
+            {/* Hero — Remaining / Total Balance */}
             <div className="hero-card">
               <div className="hero-card-label">Remaining Balance</div>
               <div className="hero-card-value">
                 {summary ? formatINR(summary.remaining) : '₹0'}
               </div>
               <div className="hero-card-sub">
-                {summary && summary.total_income > 0
-                  ? `${summary.savings_rate.toFixed(1)}% savings rate · ${summary.transaction_count} transactions`
-                  : 'No income recorded this month'}
+                {summary ? (
+                  summary.carried_over > 0 && summary.total_income > 0 ? (
+                    `${formatINR(summary.carried_over)} carried over · ${formatINR(summary.total_income)} this month · ${summary.savings_rate.toFixed(1)}% saved`
+                  ) : summary.carried_over > 0 && summary.total_income === 0 ? (
+                    `${formatINR(summary.carried_over)} carried over from previous months · ${summary.savings_rate.toFixed(1)}% saved`
+                  ) : summary.total_income > 0 ? (
+                    `${summary.savings_rate.toFixed(1)}% savings rate · ${summary.transaction_count} transaction${summary.transaction_count !== 1 ? 's' : ''}`
+                  ) : summary.remaining < 0 ? (
+                    `⚠️ Overspent by ${formatINR(Math.abs(summary.remaining))}`
+                  ) : (
+                    'No income or balance recorded'
+                  )
+                ) : 'Loading balance…'}
               </div>
             </div>
 
@@ -137,6 +147,11 @@ export default function DashboardPage() {
                 <div className="summary-card-value" style={{ color: 'var(--green)' }}>
                   {summary ? formatINR(summary.total_income) : '₹0'}
                 </div>
+                {summary && summary.carried_over > 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 3, fontWeight: 600 }}>
+                    +{formatINR(summary.carried_over)} carryover
+                  </div>
+                )}
               </div>
 
               <div className="summary-card">
@@ -147,6 +162,11 @@ export default function DashboardPage() {
                 <div className="summary-card-value" style={{ color: 'var(--red)' }}>
                   {summary ? formatINR(summary.total_expenses) : '₹0'}
                 </div>
+                {summary && (
+                  <div style={{ fontSize: 11, color: 'var(--ink-4)', marginTop: 3, fontWeight: 600 }}>
+                    {summary.transaction_count} transaction{summary.transaction_count !== 1 ? 's' : ''}
+                  </div>
+                )}
               </div>
 
               <div className="summary-card summary-card-wide">

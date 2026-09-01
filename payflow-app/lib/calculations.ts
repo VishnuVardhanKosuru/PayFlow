@@ -19,37 +19,86 @@ export async function getMonthlySummary(month: string): Promise<MonthlySummary> 
   const startDate = `${month}-01T00:00:00+05:30`;
   const [year, mon] = month.split('-').map(Number);
   const lastDay = new Date(year, mon, 0).getDate();
-  const endDate = `${month}-${lastDay}T23:59:59+05:30`;
+  const endDate = `${month}-${String(lastDay).padStart(2, '0')}T23:59:59+05:30`;
 
-  // Expenses from transactions table
-  const { data: expenseData, error: expErr } = await supabase
-    .from('transactions')
-    .select('amount')
-    .eq('type', 'expense')
-    .gte('occurred_at', startDate)
-    .lte('occurred_at', endDate);
+  const [
+    expenseRes,
+    incomeTableRes,
+    incomeTxnsRes,
+    priorIncomeTableRes,
+    priorIncomeTxnsRes,
+    priorExpenseTxnsRes,
+  ] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('amount')
+      .eq('type', 'expense')
+      .gte('occurred_at', startDate)
+      .lte('occurred_at', endDate),
+    supabase
+      .from('monthly_income')
+      .select('amount')
+      .eq('month', month),
+    supabase
+      .from('transactions')
+      .select('amount')
+      .eq('type', 'income')
+      .gte('occurred_at', startDate)
+      .lte('occurred_at', endDate),
+    supabase
+      .from('monthly_income')
+      .select('amount')
+      .lt('month', month),
+    supabase
+      .from('transactions')
+      .select('amount')
+      .eq('type', 'income')
+      .lt('occurred_at', startDate),
+    supabase
+      .from('transactions')
+      .select('amount')
+      .eq('type', 'expense')
+      .lt('occurred_at', startDate),
+  ]);
 
-  if (expErr) throw expErr;
+  if (expenseRes.error) throw expenseRes.error;
+  if (incomeTableRes.error) throw incomeTableRes.error;
+  if (incomeTxnsRes.error) throw incomeTxnsRes.error;
+  if (priorIncomeTableRes.error) throw priorIncomeTableRes.error;
+  if (priorIncomeTxnsRes.error) throw priorIncomeTxnsRes.error;
+  if (priorExpenseTxnsRes.error) throw priorExpenseTxnsRes.error;
 
-  // Income from monthly_income table
-  const { data: incomeData, error: incErr } = await supabase
-    .from('monthly_income')
-    .select('amount')
-    .eq('month', month);
+  const totalExpenses = (expenseRes.data || []).reduce((sum, t) => sum + (t.amount || 0), 0);
+  const incomeFromTable = (incomeTableRes.data || []).reduce((sum, i) => sum + (i.amount || 0), 0);
+  const incomeFromTxns = (incomeTxnsRes.data || []).reduce((sum, t) => sum + (t.amount || 0), 0);
+  const totalIncome = incomeFromTable + incomeFromTxns;
 
-  if (incErr) throw incErr;
+  const priorIncomeTable = (priorIncomeTableRes.data || []).reduce((sum, i) => sum + (i.amount || 0), 0);
+  const priorIncomeTxns = (priorIncomeTxnsRes.data || []).reduce((sum, t) => sum + (t.amount || 0), 0);
+  const priorExpenses = (priorExpenseTxnsRes.data || []).reduce((sum, t) => sum + (t.amount || 0), 0);
+  const carriedOver = (priorIncomeTable + priorIncomeTxns) - priorExpenses;
 
-  const totalExpenses = (expenseData || []).reduce((sum, t) => sum + (t.amount || 0), 0);
-  const totalIncome = (incomeData || []).reduce((sum, i) => sum + (i.amount || 0), 0);
-  const remaining = totalIncome - totalExpenses;
-  const savingsRate = totalIncome > 0 ? (remaining / totalIncome) * 100 : 0;
-  const transactionCount = (expenseData || []).length;
+  const totalAvailable = carriedOver + totalIncome;
+  const remaining = totalAvailable - totalExpenses;
+  const monthNet = totalIncome - totalExpenses;
+
+  let savingsRate = 0;
+  if (totalIncome > 0) {
+    savingsRate = (monthNet / totalIncome) * 100;
+  } else if (totalAvailable > 0) {
+    savingsRate = (remaining / totalAvailable) * 100;
+  }
+
+  const transactionCount = (expenseRes.data || []).length;
 
   return {
     month,
-    total_income: totalIncome,
-    total_expenses: totalExpenses,
-    remaining,
+    total_income: Math.round(totalIncome * 100) / 100,
+    total_expenses: Math.round(totalExpenses * 100) / 100,
+    carried_over: Math.round(carriedOver * 100) / 100,
+    total_available: Math.round(totalAvailable * 100) / 100,
+    remaining: Math.round(remaining * 100) / 100,
+    month_net: Math.round(monthNet * 100) / 100,
     savings_rate: Math.round(savingsRate * 10) / 10,
     transaction_count: transactionCount,
   };
@@ -166,20 +215,21 @@ export function generateAlerts(
 ): SpendingAlert[] {
   const alerts: SpendingAlert[] = [];
 
-  if (summary.total_income > 0) {
+  const available = summary.total_available > 0 ? summary.total_available : summary.total_income;
+
+  if (available > 0) {
     // Savings rate alert
-    if (summary.savings_rate < 10 && summary.savings_rate >= 0) {
+    if (summary.remaining < 0) {
+      alerts.push({
+        type: 'savings_low',
+        message: `You've spent ₹${Math.abs(summary.remaining).toLocaleString('en-IN')} more than your available funds!`,
+        severity: 'danger',
+      });
+    } else if (summary.savings_rate < 10 && summary.savings_rate >= 0) {
       alerts.push({
         type: 'savings_low',
         message: `Savings rate is ${summary.savings_rate.toFixed(1)}%. Consider reducing discretionary spending.`,
         severity: 'warning',
-      });
-    }
-    if (summary.savings_rate < 0) {
-      alerts.push({
-        type: 'savings_low',
-        message: `You've spent ₹${Math.abs(summary.remaining).toLocaleString('en-IN')} more than your income this month!`,
-        severity: 'danger',
       });
     }
 

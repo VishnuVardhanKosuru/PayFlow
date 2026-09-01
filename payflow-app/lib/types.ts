@@ -85,7 +85,10 @@ export interface MonthlySummary {
   month: string;
   total_income: number;
   total_expenses: number;
+  carried_over: number;
+  total_available: number;
   remaining: number;
+  month_net: number;
   savings_rate: number;
   transaction_count: number;
 }

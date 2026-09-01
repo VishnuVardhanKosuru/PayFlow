@@ -27,7 +27,15 @@ export async function GET(request: NextRequest) {
   const prevStart = `${prevMonth}-01T00:00:00+05:30`;
   const prevEnd   = `${prevMonth}-${String(prevLastDay).padStart(2,'0')}T23:59:59+05:30`;
 
-  const [currentTxns, prevTxns, incomeFromTableRes, incomeFromTxnsRes] = await Promise.all([
+  const [
+    currentTxns,
+    prevTxns,
+    incomeFromTableRes,
+    incomeFromTxnsRes,
+    priorIncomeTableRes,
+    priorIncomeTxnsRes,
+    priorExpensesRes,
+  ] = await Promise.all([
     supabase
       .from('transactions')
       .select('amount, category_id, category:categories(id,name,icon,color)')
@@ -56,17 +64,50 @@ export async function GET(request: NextRequest) {
       .eq('type', 'income')
       .gte('occurred_at', startDate)
       .lte('occurred_at', endDate),
+    // Prior Income — from monthly_income before this month
+    supabase
+      .from('monthly_income')
+      .select('amount')
+      .eq('user_id', user.id)
+      .lt('month', month),
+    // Prior Income — from transactions before this month
+    supabase
+      .from('transactions')
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('type', 'income')
+      .lt('occurred_at', startDate),
+    // Prior Expenses — from transactions before this month
+    supabase
+      .from('transactions')
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('type', 'expense')
+      .lt('occurred_at', startDate),
   ]);
 
   const currentData     = currentTxns.data || [];
   const prevData        = prevTxns.data    || [];
   const incomeFromTable = (incomeFromTableRes.data || []).reduce((s, i) => s + (i.amount || 0), 0);
   const incomeFromTxns  = (incomeFromTxnsRes.data  || []).reduce((s, t) => s + (t.amount || 0), 0);
-  // Combine both income sources so /add (💰 Income) and /income page both count
   const totalIncome     = incomeFromTable + incomeFromTxns;
+
+  const priorIncomeTable = (priorIncomeTableRes.data || []).reduce((s, i) => s + (i.amount || 0), 0);
+  const priorIncomeTxns  = (priorIncomeTxnsRes.data  || []).reduce((s, t) => s + (t.amount || 0), 0);
+  const priorExpenses    = (priorExpensesRes.data    || []).reduce((s, t) => s + (t.amount || 0), 0);
+  const carriedOver      = (priorIncomeTable + priorIncomeTxns) - priorExpenses;
+
+  const totalAvailable   = carriedOver + totalIncome;
   const totalExpenses   = currentData.reduce((s, t) => s + (t.amount || 0), 0);
-  const remaining       = totalIncome - totalExpenses;
-  const savingsRate     = totalIncome > 0 ? (remaining / totalIncome) * 100 : 0;
+  const remaining       = totalAvailable - totalExpenses;
+  const monthNet        = totalIncome - totalExpenses;
+
+  let savingsRate = 0;
+  if (totalIncome > 0) {
+    savingsRate = (monthNet / totalIncome) * 100;
+  } else if (totalAvailable > 0) {
+    savingsRate = (remaining / totalAvailable) * 100;
+  }
 
   // Category breakdown — current month
   const catMap: Record<string, { name: string; icon: string; color: string; total: number; count: number }> = {};
@@ -126,9 +167,10 @@ export async function GET(request: NextRequest) {
 
   // Alerts
   const alerts = [];
-  if (totalIncome > 0) {
-    if (savingsRate < 0) {
-      alerts.push({ type: 'savings_low', message: `You've overspent by ₹${Math.abs(remaining).toLocaleString('en-IN')} this month!`, severity: 'danger' });
+  const effectiveAvailable = totalAvailable > 0 ? totalAvailable : totalIncome;
+  if (effectiveAvailable > 0) {
+    if (remaining < 0) {
+      alerts.push({ type: 'savings_low', message: `You've overspent by ₹${Math.abs(remaining).toLocaleString('en-IN')} beyond your available funds!`, severity: 'danger' });
     } else if (savingsRate < 10) {
       alerts.push({ type: 'savings_low', message: `Savings rate is ${savingsRate.toFixed(1)}% — consider cutting discretionary spend.`, severity: 'warning' });
     }
@@ -144,10 +186,13 @@ export async function GET(request: NextRequest) {
     data: {
       month,
       summary: {
-        total_income:      Math.round(totalIncome   * 100) / 100,
-        total_expenses:    Math.round(totalExpenses * 100) / 100,
-        remaining:         Math.round(remaining     * 100) / 100,
-        savings_rate:      Math.round(savingsRate   * 10)  / 10,
+        total_income:      Math.round(totalIncome    * 100) / 100,
+        total_expenses:    Math.round(totalExpenses  * 100) / 100,
+        carried_over:      Math.round(carriedOver    * 100) / 100,
+        total_available:   Math.round(totalAvailable * 100) / 100,
+        remaining:         Math.round(remaining      * 100) / 100,
+        month_net:         Math.round(monthNet       * 100) / 100,
+        savings_rate:      Math.round(savingsRate    * 10)  / 10,
         transaction_count: currentData.length,
       },
       category_breakdown: categoryBreakdown,

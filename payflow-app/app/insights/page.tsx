@@ -93,13 +93,13 @@ export default function InsightsPage() {
             <div className="loading-spinner" />
             <span>Crunching numbers…</span>
           </div>
-        ) : !summary || summary.transaction_count === 0 ? (
+        ) : !summary || (summary.transaction_count === 0 && summary.total_income === 0 && summary.carried_over === 0) ? (
           <div className="empty-state">
             <div className="empty-state-icon">
               <BarChart2 size={24} strokeWidth={1.5} />
             </div>
             <div className="empty-state-title">No data for this month</div>
-            <div className="empty-state-desc">Add some expenses to see your spending insights.</div>
+            <div className="empty-state-desc">Add income or expenses to see your spending insights.</div>
           </div>
         ) : (
           <>
@@ -120,17 +120,23 @@ export default function InsightsPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-lg)' }}>
                 <SavingsRing rate={summary.savings_rate} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>INCOME</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-success)' }}>{formatINR(summary.total_income)}</div>
+                  {summary.carried_over > 0 && (
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>CARRIED OVER</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink-2)' }}>{formatINR(summary.carried_over)}</div>
+                    </div>
+                  )}
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>THIS MONTH INCOME</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-success)' }}>{formatINR(summary.total_income)}</div>
                   </div>
-                  <div style={{ marginBottom: 12 }}>
+                  <div style={{ marginBottom: 10 }}>
                     <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>SPENT</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-danger)' }}>{formatINR(summary.total_expenses)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-danger)' }}>{formatINR(summary.total_expenses)}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>REMAINING</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: summary.remaining >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>REMAINING BALANCE</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: summary.remaining >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                       {formatINR(summary.remaining)}
                     </div>
                   </div>
